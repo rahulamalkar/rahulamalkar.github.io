@@ -1,0 +1,13 @@
+.nav {
+    color: red;
+    width: 100%;
+    text-align: center;
+    background-color: lightblue;
+    padding:1%;
+
+}
+
+.body-container {
+    padding:0% 2%;
+    background-color: antiquewhite;
+}
