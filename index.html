@@ -1,15 +1,19 @@
 <html>
+
 <head>
-<title>Important</title>
+    <title>Important</title>
 </head>
+
 <body>
+    <p>
     #installing ifconfig command:
     yum install -y net-tools
-    
-    # cleaning linux ram cache/buffer memory. Ref:https://www.tecmint.com/clear-ram-memory-cache-buffer-and-swap-space-on-linux/
-    sync; echo 3 > /proc/sys/vm/drop_caches 
-    
-    
+
+    # cleaning linux ram cache/buffer memory.
+    Ref:https://www.tecmint.com/clear-ram-memory-cache-buffer-and-swap-space-on-linux/
+    sync; echo 3 > /proc/sys/vm/drop_caches
+
+
     #------------------------------------------------
     #installing Docker in centos7.* :
     # REF: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-centos-7
@@ -18,15 +22,15 @@
     systemctl start docker
     systemctl status docker
     systemctl enable docker
-    
+
     #------------------------------------------------
     #installing scp command :
     yum -y install openssh-clients
-    
+
     #------------------------------------------------
     #installing Development Tools like make command :
     yum groupinstall "Development Tools" -y
-    
+
     #------------------------------------------------
     #installing cppcheck command :
     yum install epel-release
@@ -34,7 +38,7 @@
     systemctl enable --now snapd.socket
     ln -s /var/lib/snapd/snap /snap
     snap install cppcheck
-    
+
     #------------------------------------------------
     # installing mariaDB.
     yum install mariadb-server
@@ -42,296 +46,280 @@
     systemctl enable mariadb
     ./mysql_secure_installation
     mysql -u root -p
-    
+
     CREATE DATABASE `<DB_NAME>`;
-    CREATE USER '<USER_NAME>' IDENTIFIED BY '<USER_PASS>';
-    GRANT USAGE ON *.* TO '<USER_NAME>'@localhost IDENTIFIED BY '<USER_PASS>';
-    GRANT ALL privileges ON `<DB_NAME>`.* TO '<USER_NAME>'@localhost;
-    GRANT ALL privileges ON `<DB_NAME>`.* TO '<USER_NAME>'@%;
-    FLUSH PRIVILEGES;
-    
-    CREATE DATABASE `dbld_ui`;
-    CREATE USER 'dbld_ui' IDENTIFIED BY 'dbld_ui';
-    GRANT USAGE ON *.* TO 'dbld_ui'@localhost IDENTIFIED BY 'dbld_ui';
-    GRANT ALL privileges ON `dbld_ui`.* TO 'dbld_ui'@localhost;
-    GRANT ALL privileges ON `dbld_ui`.* TO 'dbld_ui'@'%';
-    FLUSH PRIVILEGES;
-    
-    CREATE DATABASE `root`;
-    CREATE USER 'root' IDENTIFIED BY 'toor';
-    GRANT USAGE ON *.* TO 'root'@localhost IDENTIFIED BY 'toor';
-    GRANT USAGE ON *.* TO 'root'@'%' IDENTIFIED BY 'toor';
-    GRANT ALL privileges ON `DNS`.* TO 'DNS'@localhost;
-    GRANT ALL privileges ON `DNS`.* TO 'DNS'@'%';
-    FLUSH PRIVILEGES;
-    
-    CREATE DATABASE `eprint`;
-    CREATE USER 'eprint' IDENTIFIED BY 'eprint';
-    GRANT USAGE ON *.* TO 'eprint'@localhost IDENTIFIED BY 'eprint';
-    GRANT USAGE ON *.* TO 'eprint'@'%' IDENTIFIED BY 'eprint';
-    GRANT ALL privileges ON `eprint`.* TO 'eprint'@localhost;
-    GRANT ALL privileges ON `eprint`.* TO 'eprint'@'%';
-    FLUSH PRIVILEGES;
-    
-    CREATE DATABASE `ghana`;
-    CREATE USER 'ghana' IDENTIFIED BY 'ghana';
-    GRANT USAGE ON *.* TO 'ghana'@localhost IDENTIFIED BY 'ghana';
-    GRANT USAGE ON *.* TO 'ghana'@'%' IDENTIFIED BY 'ghana';
-    GRANT ALL privileges ON `ghana`.* TO 'ghana'@localhost;
-    GRANT ALL privileges ON `ghana`.* TO 'ghana'@'%';
-    FLUSH PRIVILEGES;
-    
-    CREATE DATABASE `bld`;
-    CREATE USER 'bld' IDENTIFIED BY 'bld';
-    GRANT USAGE ON *.* TO 'bld'@localhost IDENTIFIED BY 'bld';
-    GRANT USAGE ON *.* TO 'bld'@'%' IDENTIFIED BY 'bld';
-    GRANT ALL privileges ON `bld`.* TO 'bld'@localhost;
-    GRANT ALL privileges ON `bld`.* TO 'bld'@'%';
-    FLUSH PRIVILEGES;
-    
-    #------------------------------------------------
-    # Kill Switch:
-    while true; do if [ -f ~/kill ]; then exit 0; fi; done 
-    
-    
-    #------------------------------------------------
-    # Kuberneties installation:
-    # https://www.linuxtechi.com/install-kubernetes-1-7-centos7-rhel7/
-    swapoff -a
-    hostnamectl set-hostname 'k8s-master'
-    exec bash
-    setenforce 0
-    sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
-    
-    firewall-cmd --permanent --add-port=6443/tcp
-    firewall-cmd --permanent --add-port=2379-2380/tcp
-    firewall-cmd --permanent --add-port=10250/tcp
-    firewall-cmd --permanent --add-port=10251/tcp
-    firewall-cmd --permanent --add-port=10252/tcp
-    firewall-cmd --permanent --add-port=10255/tcp
-    firewall-cmd --reload
-    modprobe br_netfilter
-    echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
-    
-    cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-    [kubernetes]
-    name=Kubernetes
-    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-    enabled=1
-    gpgcheck=1
-    repo_gpgcheck=1
-    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-            https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-    EOF
-    
-    yum install kubeadm docker -y
-    systemctl restart docker && systemctl enable docker
-    systemctl  restart kubelet && systemctl enable kubelet
-    kubeadm init
-    
-    mkdir -p $HOME/.kube
-    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-    chown $(id -u):$(id -g) $HOME/.kube/config
-    
-    export kubever=$(kubectl version | base64 | tr -d '\n')
-    kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever"
-    kubectl get nodes
-    kubectl get pods --all-namespaces
-    
-    kubectl get nodes; kubectl get pods --all-namespaces
-    
-    
-    #------------------------------------------------
-    # Kube Worker Join set up :
-    swapoff -a
-    setenforce 0
-    sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
-    firewall-cmd --permanent --add-port=10250/tcp
-    firewall-cmd --permanent --add-port=10255/tcp
-    firewall-cmd --permanent --add-port=30000-32767/tcp
-    firewall-cmd --permanent --add-port=6783/tcp
-    firewall-cmd  --reload
-    echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
-    
-    cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-    [kubernetes]
-    name=Kubernetes
-    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-    enabled=1
-    gpgcheck=1
-    repo_gpgcheck=1
-    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-            https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-    EOF
-    
-    yum  install kubeadm docker -y
-    systemctl restart docker && systemctl enable docker
-    
-    
-    #------------------------------------------------
-    # Getting Kuberneties worker :
-    cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-    [kubernetes]
-    name=Kubernetes
-    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-    enabled=1
-    gpgcheck=1
-    repo_gpgcheck=1
-    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-    EOF
-    
-    setenforce 0
-    sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-    yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-    systemctl enable --now kubelet
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    kubeadm join 172.17.60.186:6443 --token horrx5.gib7jkxchl6a62s4 \
-        --discovery-token-ca-cert-hash sha256:f572cc816585312c159b468f95c9d137edefb7f9a3e8be1ceab12a063cb12ece
-    
-    
-    
-    
-    
-    
-    
-    REST OF STUFF------------------------------------------------
-    
-    rm logs/BillRequestMonitor.log ; touch logs/BillRequestMonitor.log; c; c; c; tail -f logs/BillRequestMonitor.log
-    
-    
-    Kafka installation in centos:
-    yum install java-1.8.0-openjdk.x86_64 -y
-    wget http://www-us.apache.org/dist/kafka/2.3.0/kafka_2.11-2.3.0.tgz
-    
-    
-    
-    bin/kafka-topics.sh --zookeeper localhost:2181 --create --topic my-example-topic --partitions 1 --replication-factor 1
-    bin/kafka-console-producer.sh --broker-list localhost:9092 --topic enricher_test
-    bin/kafka-console-consumer.sh --bootstrap-server localhost:9092  --topic enricher_test --from-beginning
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    ssh tecnotree@192.168.202.213 //Sandeep's lab server for DevOps.
-    
-    
-    mysql -uroot -ptecnotree -h172.20.44.78
-    
-    
-    kubectl logs eprint-bill-request-monitor-59c946754-mptbj -n dcbs-apps
-    
-    
-    
-    
-    UPDATE PRN_QUERY_MASTER SET DATABASE_IDENTIFIER_V='PRNDB' WHERE QUERY_ID_N=1000;
-    
-    
-    
-    
-    mysql -uroot -pTkMagJCQbFPuiUE2UoSA -h 10.130.17.146 -P 30700 #mtni IAT db root
-    mysql -urahul_mtni -prahul_mtni -Drahul_mtni -h 10.130.17.146 -P 30700 #mtni IAT db
-    
-    
-    
-    ssh rahul@
-    
-    
-    
-    git -c http.sslVerify=false
-    
-    
-    
-    [rahul@localhost bin]$ cat cleanDB.sh
-    #mysql -uusr_cbs_dev_billlayout -pusr_cbs_dev_billlayout -D db_cbs_dev_billlayout -h 172.20.44.78 << EOF
-    #mysql -ueprint_sprint5 -peprint_sprint5 -Deprint_sprint5 -h 10.130.17.146 -P 30700 << EOF
-    mysql -urahul_mtni -prahul_mtni -Drahul_mtni << EOF
-    TRUNCATE TABLE CB_VIEW_BILL_DETAILS                     ;
-    TRUNCATE TABLE PRN_BILL_GEN_STATUS_DETAILS              ;
-    TRUNCATE TABLE PRN_INSTANCE_STATUS_DTLS                 ;
-    TRUNCATE TABLE PRN_INSTANCE_STATUS_MASTER               ;
-    commit;
-    EOF
-    
-    
-    
-    
-    
-    
-    [rahul@localhost bin]$ cat sqlite.sh
-    ps -ef | grep E-Print | grep -v grep
-    
-    #mysql -uusr_cbs_dev_billlayout -pusr_cbs_dev_billlayout -D db_cbs_dev_billlayout -h 172.20.44.78 <<EOF
-    mysql -urahul_mtni -prahul_mtni -Drahul_mtni << EOF
-    select * from PRN_INSTANCE_STATUS_MASTER;
-    select * from PRN_INSTANCE_STATUS_DTLS;
-    -- select * from PRN_BILL_GEN_STATUS_DETAILS;
-    EOF
-    
-    sqlite3 billRequestMonitor.db << EOF
-    select "PRN_INSTANCE_STATUS_MASTER:";
-    select * from PRN_INSTANCE_STATUS_MASTER;
-    select "PRN_INSTANCE_STATUS_DTLS:";
-    select * from PRN_INSTANCE_STATUS_DTLS;
-    select "PRN_BILL_GEN_STATUS_DETAILS:";
-    -- select * from PRN_BILL_GEN_STATUS_DETAILS;
-    EOF
-    
-    
-    https://192.168.228.180/login
-    admin/Tecnotree@9842
-    
-    
-    
-    docker run --name mariadb -p 3306:3306 -e MYSQL_ROOT_PASSWORD=toor -d mariadb
-    
-    find . -name "*.h" -exec dos2unix {} \; &
-    find . -name "*.c" -exec dos2unix {} \; &
-    for file in $(find . -name "*.h")
-    do
-    dos2unix $file &
-    done
-    for file in $(find . -name "*.h"); do dos2unix $file & done &
-    for file in $(find . -name "*.cpp"); do dos2unix $file & done &
-        
-    
-    *****New BLD project servers****************
-    
-    
-    
-    
-    1.    VM1->
-    Hostname: cc849-nodejs-app-228-225
-    IP Address: 192.168.228.225
-    Username: tecnotree
-    Password: tecnotree@2020
-    
-    
-    2.    VM2->
-    Hostname: cc849-reactjs-app-228-226
-    IP Address: 192.168.228.226
-    Username: tecnotree
-    Password: tecnotree@2020
-    
-    
-    
-    ************************************
+        CREATE USER '<USER_NAME>' IDENTIFIED BY '<USER_PASS>';
+                GRANT USAGE ON *.* TO '<USER_NAME>'@localhost IDENTIFIED BY '<USER_PASS>';
+                        GRANT ALL privileges ON `<DB_NAME>`.* TO '<USER_NAME>'@localhost;
+                                GRANT ALL privileges ON `<DB_NAME>`.* TO '<USER_NAME>'@%;
+                                        FLUSH PRIVILEGES;
+
+                                        CREATE DATABASE `dbld_ui`;
+                                        CREATE USER 'dbld_ui' IDENTIFIED BY 'dbld_ui';
+                                        GRANT USAGE ON *.* TO 'dbld_ui'@localhost IDENTIFIED BY 'dbld_ui';
+                                        GRANT ALL privileges ON `dbld_ui`.* TO 'dbld_ui'@localhost;
+                                        GRANT ALL privileges ON `dbld_ui`.* TO 'dbld_ui'@'%';
+                                        FLUSH PRIVILEGES;
+
+                                        CREATE DATABASE `root`;
+                                        CREATE USER 'root' IDENTIFIED BY 'toor';
+                                        GRANT USAGE ON *.* TO 'root'@localhost IDENTIFIED BY 'toor';
+                                        GRANT USAGE ON *.* TO 'root'@'%' IDENTIFIED BY 'toor';
+                                        GRANT ALL privileges ON `DNS`.* TO 'DNS'@localhost;
+                                        GRANT ALL privileges ON `DNS`.* TO 'DNS'@'%';
+                                        FLUSH PRIVILEGES;
+
+                                        CREATE DATABASE `eprint`;
+                                        CREATE USER 'eprint' IDENTIFIED BY 'eprint';
+                                        GRANT USAGE ON *.* TO 'eprint'@localhost IDENTIFIED BY 'eprint';
+                                        GRANT USAGE ON *.* TO 'eprint'@'%' IDENTIFIED BY 'eprint';
+                                        GRANT ALL privileges ON `eprint`.* TO 'eprint'@localhost;
+                                        GRANT ALL privileges ON `eprint`.* TO 'eprint'@'%';
+                                        FLUSH PRIVILEGES;
+
+                                        CREATE DATABASE `ghana`;
+                                        CREATE USER 'ghana' IDENTIFIED BY 'ghana';
+                                        GRANT USAGE ON *.* TO 'ghana'@localhost IDENTIFIED BY 'ghana';
+                                        GRANT USAGE ON *.* TO 'ghana'@'%' IDENTIFIED BY 'ghana';
+                                        GRANT ALL privileges ON `ghana`.* TO 'ghana'@localhost;
+                                        GRANT ALL privileges ON `ghana`.* TO 'ghana'@'%';
+                                        FLUSH PRIVILEGES;
+
+                                        CREATE DATABASE `bld`;
+                                        CREATE USER 'bld' IDENTIFIED BY 'bld';
+                                        GRANT USAGE ON *.* TO 'bld'@localhost IDENTIFIED BY 'bld';
+                                        GRANT USAGE ON *.* TO 'bld'@'%' IDENTIFIED BY 'bld';
+                                        GRANT ALL privileges ON `bld`.* TO 'bld'@localhost;
+                                        GRANT ALL privileges ON `bld`.* TO 'bld'@'%';
+                                        FLUSH PRIVILEGES;
+
+                                        #------------------------------------------------
+                                        # Kill Switch:
+                                        while true; do if [ -f ~/kill ]; then exit 0; fi; done
+
+
+                                        #------------------------------------------------
+                                        # Kuberneties installation:
+                                        # https://www.linuxtechi.com/install-kubernetes-1-7-centos7-rhel7/
+                                        swapoff -a
+                                        hostnamectl set-hostname 'k8s-master'
+                                        exec bash
+                                        setenforce 0
+                                        sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g'
+                                        /etc/sysconfig/selinux
+
+                                        firewall-cmd --permanent --add-port=6443/tcp
+                                        firewall-cmd --permanent --add-port=2379-2380/tcp
+                                        firewall-cmd --permanent --add-port=10250/tcp
+                                        firewall-cmd --permanent --add-port=10251/tcp
+                                        firewall-cmd --permanent --add-port=10252/tcp
+                                        firewall-cmd --permanent --add-port=10255/tcp
+                                        firewall-cmd --reload
+                                        modprobe br_netfilter
+                                        echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+                                        cat <<EOF> /etc/yum.repos.d/kubernetes.repo
+                                            [kubernetes]
+                                            name=Kubernetes
+                                            baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+                                            enabled=1
+                                            gpgcheck=1
+                                            repo_gpgcheck=1
+                                            gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                                            https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+                                            EOF
+
+                                            yum install kubeadm docker -y
+                                            systemctl restart docker && systemctl enable docker
+                                            systemctl restart kubelet && systemctl enable kubelet
+                                            kubeadm init
+
+                                            mkdir -p $HOME/.kube
+                                            cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+                                            chown $(id -u):$(id -g) $HOME/.kube/config
+
+                                            export kubever=$(kubectl version | base64 | tr -d '\n')
+                                            kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever"
+                                            kubectl get nodes
+                                            kubectl get pods --all-namespaces
+
+                                            kubectl get nodes; kubectl get pods --all-namespaces
+
+
+                                            #------------------------------------------------
+                                            # Kube Worker Join set up :
+                                            swapoff -a
+                                            setenforce 0
+                                            sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g'
+                                            /etc/sysconfig/selinux
+                                            firewall-cmd --permanent --add-port=10250/tcp
+                                            firewall-cmd --permanent --add-port=10255/tcp
+                                            firewall-cmd --permanent --add-port=30000-32767/tcp
+                                            firewall-cmd --permanent --add-port=6783/tcp
+                                            firewall-cmd --reload
+                                            echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+                                            cat <<EOF> /etc/yum.repos.d/kubernetes.repo
+                                                [kubernetes]
+                                                name=Kubernetes
+                                                baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+                                                enabled=1
+                                                gpgcheck=1
+                                                repo_gpgcheck=1
+                                                gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                                                https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+                                                EOF
+
+                                                yum install kubeadm docker -y
+                                                systemctl restart docker && systemctl enable docker
+
+
+                                                #------------------------------------------------
+                                                # Getting Kuberneties worker :
+                                                cat <<EOF> /etc/yum.repos.d/kubernetes.repo
+                                                    [kubernetes]
+                                                    name=Kubernetes
+                                                    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+                                                    enabled=1
+                                                    gpgcheck=1
+                                                    repo_gpgcheck=1
+                                                    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                                                    https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+                                                    EOF
+
+                                                    setenforce 0
+                                                    sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/'
+                                                    /etc/selinux/config
+                                                    yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+                                                    systemctl enable --now kubelet
+
+
+
+
+
+
+
+
+
+
+                                                    kubeadm join 172.17.60.186:6443 --token horrx5.gib7jkxchl6a62s4 \
+                                                    --discovery-token-ca-cert-hash
+                                                    sha256:f572cc816585312c159b468f95c9d137edefb7f9a3e8be1ceab12a063cb12ece
+
+
+
+
+
+
+
+                                                    REST OF STUFF------------------------------------------------
+
+                                                    rm logs/BillRequestMonitor.log ; touch logs/BillRequestMonitor.log;
+                                                    c; c; c; tail -f logs/BillRequestMonitor.log
+
+
+                                                    Kafka installation in centos:
+                                                    yum install java-1.8.0-openjdk.x86_64 -y
+                                                    wget http://www-us.apache.org/dist/kafka/2.3.0/kafka_2.11-2.3.0.tgz
+
+
+
+                                                    bin/kafka-topics.sh --zookeeper localhost:2181 --create --topic
+                                                    my-example-topic --partitions 1 --replication-factor 1
+                                                    bin/kafka-console-producer.sh --broker-list localhost:9092 --topic
+                                                    enricher_test
+                                                    bin/kafka-console-consumer.sh --bootstrap-server localhost:9092
+                                                    --topic enricher_test --from-beginning
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                    ssh tecnotree@192.168.202.213 //Sandeep's lab server for DevOps.
+
+
+                                                    mysql -uroot -ptecnotree -h172.20.44.78
+
+
+                                                    kubectl logs eprint-bill-request-monitor-59c946754-mptbj -n
+                                                    dcbs-apps
+
+
+
+
+                                                    UPDATE PRN_QUERY_MASTER SET DATABASE_IDENTIFIER_V='PRNDB' WHERE
+                                                    QUERY_ID_N=1000;
+
+
+
+
+                                                    mysql -uroot -pTkMagJCQbFPuiUE2UoSA -h 10.130.17.146 -P 30700 #mtni
+                                                    IAT db root
+                                                    mysql -urahul_mtni -prahul_mtni -Drahul_mtni -h 10.130.17.146 -P
+                                                    30700 #mtni IAT db
+
+
+
+                                                    ssh rahul@
+
+
+
+                                                    git -c http.sslVerify=false
+
+
+
+                                                    [rahul@localhost bin]$ cat cleanDB.sh
+                                                    #mysql -uusr_cbs_dev_billlayout -pusr_cbs_dev_billlayout -D
+                                                    db_cbs_dev_billlayout -h 172.20.44.78 << EOF #mysql -ueprint_sprint5
+                                                        -peprint_sprint5 -Deprint_sprint5 -h 10.130.17.146 -P 30700 <<
+                                                        EOF mysql -urahul_mtni -prahul_mtni -Drahul_mtni << EOF TRUNCATE
+                                                        TABLE CB_VIEW_BILL_DETAILS ; TRUNCATE TABLE
+                                                        PRN_BILL_GEN_STATUS_DETAILS ; TRUNCATE TABLE
+                                                        PRN_INSTANCE_STATUS_DTLS ; TRUNCATE TABLE
+                                                        PRN_INSTANCE_STATUS_MASTER ; commit; EOF [rahul@localhost bin]$
+                                                        cat sqlite.sh ps -ef | grep E-Print | grep -v grep #mysql
+                                                        -uusr_cbs_dev_billlayout -pusr_cbs_dev_billlayout -D
+                                                        db_cbs_dev_billlayout -h 172.20.44.78 <<EOF mysql -urahul_mtni
+                                                        -prahul_mtni -Drahul_mtni << EOF select * from
+                                                        PRN_INSTANCE_STATUS_MASTER; select * from
+                                                        PRN_INSTANCE_STATUS_DTLS; -- select * from
+                                                        PRN_BILL_GEN_STATUS_DETAILS; EOF sqlite3 billRequestMonitor.db
+                                                        << EOF select "PRN_INSTANCE_STATUS_MASTER:" ; select * from
+                                                        PRN_INSTANCE_STATUS_MASTER; select "PRN_INSTANCE_STATUS_DTLS:" ;
+                                                        select * from PRN_INSTANCE_STATUS_DTLS;
+                                                        select "PRN_BILL_GEN_STATUS_DETAILS:" ; -- select * from
+                                                        PRN_BILL_GEN_STATUS_DETAILS; EOF https://192.168.228.180/login
+                                                        admin/Tecnotree@9842 docker run --name mariadb -p 3306:3306 -e
+                                                        MYSQL_ROOT_PASSWORD=toor -d mariadb find . -name "*.h" -exec
+                                                        dos2unix {} \; & find . -name "*.c" -exec dos2unix {} \; & for
+                                                        file in $(find . -name "*.h" ) do dos2unix $file & done for file
+                                                        in $(find . -name "*.h" ); do dos2unix $file & done & for file
+                                                        in $(find . -name "*.cpp" ); do dos2unix $file & done & *****New
+                                                        BLD project servers**************** 1. VM1->
+                                                        Hostname: cc849-nodejs-app-228-225
+                                                        IP Address: 192.168.228.225
+                                                        Username: tecnotree
+                                                        Password: tecnotree@2020
+
+
+                                                        2. VM2->
+                                                        Hostname: cc849-reactjs-app-228-226
+                                                        IP Address: 192.168.228.226
+                                                        Username: tecnotree
+                                                        Password: tecnotree@2020
+
+
+
+                                                        ************************************
+                                                </p>
 </body>
+
 </html>
