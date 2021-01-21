@@ -1,0 +1,64 @@
+<meta charset="utf8" />
+<html>
+
+<body>
+    <div id="root">
+        <p id="loading">Loading...</p>
+    </div>
+</body>
+
+<script src='https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/sql-wasm.js'></script>
+<script>
+    var db = undefined;
+    let config = {
+        locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
+    }
+
+    dbFileElm = () => {
+        let inputFileUpload = document.getElementById("dbFile")
+        var dbFile = inputFileUpload.files[0];
+        var fr = new FileReader();
+        fr.onload = function() {
+            var Uints = new Uint8Array(fr.result);
+            initSqlJs(config).then(function(SQL) {
+                db = new SQL.Database(Uints);
+
+                inputFileUpload.parentElement.removeChild(inputFileUpload);
+
+                // Prepare a statement
+                var stmt = db.prepare("select id, link from masterLinks where status = 'A'");
+                let table = document.createElement("TABLE");
+                table.setAttribute("id", "myTable");
+
+                while (stmt.step()) { //
+                    var row = stmt.getAsObject();
+                    console.log('Here is a row: ' + JSON.stringify(row));
+                    let TR = document.createElement("TR");
+                    let TD = document.createElement("TD");
+                    let text = document.createTextNode(row.link);
+                    TD.appendChild(text);
+                    TR.appendChild(TD);
+                    table.appendChild(TR);
+                }
+
+                document.getElementById("root").appendChild(table);
+            });
+        }
+        fr.readAsArrayBuffer(dbFile);
+    }
+</script>
+
+<script>
+    let loading = document.getElementById("loading");
+    loading.parentElement.removeChild(loading);
+
+    let fileInput = document.createElement("INPUT");
+    fileInput.setAttribute("type", "file");
+    fileInput.setAttribute("id", "dbFile");
+    fileInput.setAttribute("onchange", "dbFileElm()");
+    document.getElementById("root").appendChild(fileInput);
+</script>
+
+</html>
+
+</html>
