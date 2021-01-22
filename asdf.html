@@ -1,6 +1,14 @@
 <meta charset="utf8" />
 <html>
 
+<style>
+    table,
+    th,
+    td {
+        border: 1px solid black;
+    }
+</style>
+
 <body>
     <div id="root">
         <p id="loading">Loading...</p>
@@ -15,36 +23,61 @@
     }
 
     dbFileElm = () => {
-        let inputFileUpload = document.getElementById("dbFile")
+        let inputFileUpload = document.getElementById("dbFile");
         var dbFile = inputFileUpload.files[0];
         var fr = new FileReader();
         fr.onload = function() {
             var Uints = new Uint8Array(fr.result);
             initSqlJs(config).then(function(SQL) {
                 db = new SQL.Database(Uints);
-
-                inputFileUpload.parentElement.removeChild(inputFileUpload);
-
-                // Prepare a statement
-                var stmt = db.prepare("select id, link from masterLinks where status = 'A'");
-                let table = document.createElement("TABLE");
-                table.setAttribute("id", "myTable");
-
-                while (stmt.step()) { //
-                    var row = stmt.getAsObject();
-                    console.log('Here is a row: ' + JSON.stringify(row));
-                    let TR = document.createElement("TR");
-                    let TD = document.createElement("TD");
-                    let text = document.createTextNode(row.link);
-                    TD.appendChild(text);
-                    TR.appendChild(TD);
-                    table.appendChild(TR);
-                }
-
-                document.getElementById("root").appendChild(table);
+                printLinks();
             });
         }
         fr.readAsArrayBuffer(dbFile);
+    }
+
+    printLinks = () => {
+        let inputFileUpload = document.getElementById("dbFile");
+        inputFileUpload.parentElement.removeChild(inputFileUpload);
+
+        // Prepare a statement
+        var stmt = db.prepare("select id, link from masterLinks where status = 'A'");
+        let table = document.createElement("TABLE");
+        table.setAttribute("id", "myTable");
+
+        while (stmt.step()) {
+            var row = stmt.getAsObject();
+            console.log('Here is a row: ' + JSON.stringify(row));
+            let TR = document.createElement("TR");
+            let TD = document.createElement("TD");
+            let text = document.createTextNode(row.link);
+            TD.appendChild(text);
+
+            let button = document.createElement("INPUT");
+            button.setAttribute("type", "button");
+            button.setAttribute("onclick", "disableLink(" + row.id + ")");
+            button.setAttribute("value", "Disable");
+
+            let TD1 = document.createElement("TD");
+            TD1.appendChild(button);
+
+            TR.appendChild(TD);
+            TR.appendChild(TD1);
+
+            table.appendChild(TR);
+        }
+
+        document.getElementById("root").appendChild(table);
+    };
+
+    disableLink = (id) => {
+        if (!db) {
+            alert("DB not set.");
+            return;
+        }
+
+        console.log(id);
+        // db.run(``);
     }
 </script>
 
