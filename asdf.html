@@ -6,6 +6,12 @@
     th,
     td {
         border: 1px solid black;
+        inline-size: -webkit-fill-available;
+    }
+    
+    input[type="text"],
+    input[type="button"] {
+        width: 100%;
     }
 </style>
 
@@ -22,7 +28,7 @@
         locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
     }
 
-    dbFileElm = () => {
+    fileUpload = () => {
         let inputFileUpload = document.getElementById("dbFile");
         var dbFile = inputFileUpload.files[0];
         var fr = new FileReader();
@@ -30,6 +36,9 @@
             var Uints = new Uint8Array(fr.result);
             initSqlJs(config).then(function(SQL) {
                 db = new SQL.Database(Uints);
+                let inputFileUpload = document.getElementById("dbFile");
+                inputFileUpload.parentElement.removeChild(inputFileUpload);
+
                 printLinks();
             });
         }
@@ -37,17 +46,18 @@
     }
 
     printLinks = () => {
-        let inputFileUpload = document.getElementById("dbFile");
-        inputFileUpload.parentElement.removeChild(inputFileUpload);
+        let tableExists = document.getElementById("myTable");
+        if (tableExists) {
+            tableExists.parentElement.removeChild(tableExists);
+        }
 
-        // Prepare a statement
         var stmt = db.prepare("select id, link from masterLinks where status = 'A'");
         let table = document.createElement("TABLE");
         table.setAttribute("id", "myTable");
 
         while (stmt.step()) {
             var row = stmt.getAsObject();
-            console.log('Here is a row: ' + JSON.stringify(row));
+            // console.log('Here is a row: ' + JSON.stringify(row));
             let TR = document.createElement("TR");
             let TD = document.createElement("TD");
             let text = document.createTextNode(row.link);
@@ -67,6 +77,28 @@
             table.appendChild(TR);
         }
 
+        let TR = document.createElement("TR");
+        let TD = document.createElement("TD");
+
+        let text = document.createElement("INPUT");
+        text.setAttribute("type", "text");
+        text.setAttribute("id", "addLink");
+
+        TD.appendChild(text);
+        TR.appendChild(TD);
+
+        let button = document.createElement("INPUT");
+        button.setAttribute("type", "button");
+        button.setAttribute("onclick", "addLink()");
+        button.setAttribute("value", "AddLink");
+
+        let TD1 = document.createElement("TD");
+        TD1.appendChild(button);
+
+        TR.appendChild(TD1);
+
+        table.appendChild(TR);
+
         document.getElementById("root").appendChild(table);
     };
 
@@ -77,8 +109,22 @@
         }
 
         console.log(id);
-        // db.run(``);
-    }
+
+        db.run(`update masterLinks set status = 'I' where id = ${id}`);
+        printLinks();
+    };
+
+    addLink = () => {
+        if (!db) {
+            alert("DB not set.");
+            return;
+        }
+
+        let link = document.getElementById("addLink").value;
+        console.log(`addLink:${link}`);
+        db.run(`insert into masterLinks (link, status) values ('${link}', 'A')`);
+        printLinks();
+    };
 </script>
 
 <script>
@@ -88,7 +134,7 @@
     let fileInput = document.createElement("INPUT");
     fileInput.setAttribute("type", "file");
     fileInput.setAttribute("id", "dbFile");
-    fileInput.setAttribute("onchange", "dbFileElm()");
+    fileInput.setAttribute("onchange", "fileUpload()");
     document.getElementById("root").appendChild(fileInput);
 </script>
 
