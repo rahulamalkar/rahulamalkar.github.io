@@ -60,8 +60,12 @@
             // console.log('Here is a row: ' + JSON.stringify(row));
             let TR = document.createElement("TR");
             let TD = document.createElement("TD");
-            let text = document.createTextNode(row.link);
-            TD.appendChild(text);
+            // let text = document.createTextNode(row.link);
+            let a = document.createElement("a");
+            a.setAttribute("href", row.link);
+            a.setAttribute("target", "_blank");
+            a.innerText = row.link;
+            TD.appendChild(a);
 
             let button = document.createElement("INPUT");
             button.setAttribute("type", "button");
