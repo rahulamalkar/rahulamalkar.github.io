@@ -22,19 +22,22 @@
     </div>
 </body>
 
-<script src='https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/sql-wasm.js'></script>
+<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/sql-wasm.js'></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/xlsx.full.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/jszip.js"></script>
+
 <script>
-    var db = undefined;
+    let db = undefined;
     let config = {
         locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
     }
 
     fileUpload = () => {
         let inputFileUpload = document.getElementById("dbFile");
-        var dbFile = inputFileUpload.files[0];
-        var fr = new FileReader();
+        let dbFile = inputFileUpload.files[0];
+        let fr = new FileReader();
         fr.onload = function() {
-            var Uints = new Uint8Array(fr.result);
+            let Uints = new Uint8Array(fr.result);
             initSqlJs(config).then(function(SQL) {
                 db = new SQL.Database(Uints);
                 let inputFileUpload = document.getElementById("dbFile");
@@ -52,96 +55,76 @@
             tableExists.parentElement.removeChild(tableExists);
         }
 
-        var stmt = db.prepare(`select id, link from masterLinks where status = '${status ? status : 'A'}'`);
+        let stmt = db.prepare(`select id, link from masterLinks where status = '${status ? status : 'A'}'`);
         let table = document.createElement("TABLE");
-        table.setAttribute("id", "myTable");
+        table.id = "myTable";
 
         while (stmt.step()) {
-            var row = stmt.getAsObject();
-            // console.log('Here is a row: ' + JSON.stringify(row));
-            let TR = document.createElement("TR");
-            let TD = document.createElement("TD");
-            // let text = document.createTextNode(row.link);
+            let dbRow = stmt.getAsObject();
+
+            let tableRow = table.insertRow(-1);
+
             let a = document.createElement("a");
-            a.setAttribute("href", row.link);
-            a.setAttribute("target", "_blank");
-            a.innerText = row.link;
-            TD.appendChild(a);
+            a.href = dbRow.link;
+            a.target = "_blank";
+            a.innerText = dbRow.link;
+            let cell = tableRow.insertCell(-1);
+            cell.appendChild(a);
+
+            if (!status) {
+                let fileInput = document.createElement("INPUT");
+                fileInput.setAttribute("type", "file");
+                fileInput.setAttribute("id", `backTestData-${dbRow.id}`);
+                fileInput.setAttribute("onchange", `uploadBackTestData(${dbRow.id})`);
+                cell = tableRow.insertCell(-1);
+                cell.appendChild(fileInput);
+            }
 
             let button = document.createElement("INPUT");
             button.setAttribute("type", "button");
-            button.setAttribute("onclick", `changeLinkStatus(${row.id}, ${status ? '"A"' : '"I"'})`);
+            button.setAttribute("onclick", `changeLinkStatus(${dbRow.id}, ${status ? '"A"' : '"I"'})`);
             button.setAttribute("value", `${status ? 'Activate' : 'Disable'}`);
-
-            let TD1 = document.createElement("TD");
-            TD1.appendChild(button);
-
-            TR.appendChild(TD);
-            TR.appendChild(TD1);
-
-            table.appendChild(TR);
+            cell = tableRow.insertCell(-1);
+            cell.appendChild(button);
         }
 
-        {
-            let TR = document.createElement("TR");
-            let TD = document.createElement("TD");
+        if (!status) {
+            let tableRow = table.insertRow(-1);
 
             let text = document.createElement("INPUT");
             text.setAttribute("type", "text");
             text.setAttribute("id", "addLink");
-
-            TD.appendChild(text);
-            TR.appendChild(TD);
+            let cell = tableRow.insertCell(-1);
+            cell.appendChild(text);
 
             let button = document.createElement("INPUT");
             button.setAttribute("type", "button");
             button.setAttribute("onclick", "addLink()");
             button.setAttribute("value", "AddLink");
-
-            let TD1 = document.createElement("TD");
-            TD1.appendChild(button);
-
-            TR.appendChild(TD1);
-
-            table.appendChild(TR);
+            cell = tableRow.insertCell(-1);
+            cell.setAttribute("colspan", "2");
+            cell.appendChild(button);
         }
 
-        let TH = document.createElement("TH");
-        let TD = document.createElement("TD");
+        let tableRow = table.insertRow(-1);
 
         let button = document.createElement("INPUT");
         button.setAttribute("type", "button");
         button.setAttribute("onclick", `printLinks(${status ? '' : '"I"'})`);
         button.setAttribute("value", `Show ${status ? 'Active' : 'Disabled'} Links`);
-
-
-        TD.appendChild(button);
-        TH.appendChild(TD);
-
-        table.appendChild(TH);
+        let cell = tableRow.insertCell(-1);
+        cell.setAttribute("colspan", "3");
+        cell.appendChild(button);
 
         document.getElementById("root").appendChild(table);
     };
 
     changeLinkStatus = (id, status) => {
-        if (!db) {
-            alert("DB not set.");
-            return;
-        }
-
-        console.log(id);
-
         db.run(`update masterLinks set status = '${status}' where id = ${id}`);
-
         printLinks();
     };
 
     addLink = () => {
-        if (!db) {
-            alert("DB not set.");
-            return;
-        }
-
         let link = document.getElementById("addLink").value;
         console.log(`addLink:${link}`);
         let res = link.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
@@ -149,6 +132,52 @@
             db.run(`insert into masterLinks (link, status) values ('${link}', 'A')`);
             printLinks();
         } else alert("invalid link");
+    };
+
+    uploadBackTestData = (id) => {
+        //Reference the FileUpload element.
+        let fileUpload = document.getElementById(`backTestData-${id}`);
+        let parent = fileUpload.parentElement;
+        let loading = document.createElement("P");
+        loading.setAttribute("id", `backTestDataLoading-${id}`);
+        loading.innerText = "Loading...";
+        parent.removeChild(fileUpload);
+        parent.appendChild(loading);
+
+        //Validate whether File is valid Excel file.
+        let regex = /^([a-zA-Z0-9\s_\\.\-:])+(.xls|.xlsx|.csv)$/;
+        if (regex.test(fileUpload.value.toLowerCase())) {
+            if (typeof(FileReader) != "undefined") {
+                let reader = new FileReader();
+
+                //For Browsers other than IE.
+                if (reader.readAsBinaryString) {
+                    reader.onload = function(e) {
+                        ProcessExcel(e.target.result);
+                    };
+                    reader.readAsBinaryString(fileUpload.files[0]);
+                } else {
+                    //For IE Browser.
+                    reader.onload = function(e) {
+                        let data = "";
+                        let bytes = new Uint8Array(e.target.result);
+                        for (let i = 0; i < bytes.byteLength; i++) {
+                            data += String.fromCharCode(bytes[i]);
+                        }
+                        ProcessExcel(data);
+                    };
+                    reader.readAsArrayBuffer(fileUpload.files[0]);
+                }
+            } else {
+                alert("This browser does not support HTML5.");
+            }
+        } else {
+            alert("Please upload a valid Excel file.");
+        }
+    };
+
+    ProcessExcel = (data) => {
+        console.log("processing excel file.");
     };
 </script>
 
