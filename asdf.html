@@ -153,7 +153,7 @@
                 //For Browsers other than IE.
                 if (reader.readAsBinaryString) {
                     reader.onload = function(e) {
-                        ProcessExcel(e.target.result);
+                        ProcessExcel(id, e.target.result);
                     };
                     reader.readAsBinaryString(fileUpload.files[0]);
                 } else {
@@ -164,7 +164,7 @@
                         for (let i = 0; i < bytes.byteLength; i++) {
                             data += String.fromCharCode(bytes[i]);
                         }
-                        ProcessExcel(data);
+                        ProcessExcel(id, data);
                     };
                     reader.readAsArrayBuffer(fileUpload.files[0]);
                 }
@@ -176,8 +176,34 @@
         }
     };
 
-    ProcessExcel = (data) => {
-        console.log("processing excel file.");
+    ProcessExcel = (id, data) => {
+        //Read the Excel File data.
+        var workbook = XLSX.read(data, {
+            type: 'binary'
+        });
+
+        //Fetch the name of First Sheet.
+        var firstSheet = workbook.SheetNames[0];
+
+        //Read all rows from First Sheet into an JSON array.
+        var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[firstSheet]);
+
+        //Add the data rows from Excel file.
+        for (var i = 0; i < excelRows.length; i++) {
+            let dateParts = (excelRows[i].date.indexOf("/") !== -1) ? excelRows[i].date.split("/") : excelRows[i].date.split("-");
+            db.run(`insert or ignore into backTestData (link, date, symbol) values (?,?,?)`, [id, Number(((dateParts[2].length === 2) ? "20" + dateParts[2] : dateParts[2]) + dateParts[1] + dateParts[0]), excelRows[i].symbol]);
+        }
+
+        let fileUploadLoading = document.getElementById(`backTestDataLoading-${id}`);
+        let parent = fileUploadLoading.parentElement;
+        let loading = document.createElement("P");
+        loading.innerText = "Done.";
+        parent.removeChild(fileUploadLoading);
+        parent.appendChild(loading);
+    };
+
+    twoDigit = (n) => {
+        return (n < 10 ? '0' : '') + n;
     };
 </script>
 
