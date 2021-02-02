@@ -14,6 +14,14 @@
         width: 100%;
         height: 50px;
     }
+    
+    .DownloadDbButton {
+        position: fixed;
+        /* width: 25%; */
+        bottom: 0px;
+        right: 0px;
+        border: 3px solid #8AC007;
+    }
 </style>
 
 <body>
@@ -45,6 +53,7 @@
 
                 let downloadDb = document.createElement("INPUT");
                 downloadDb.type = "button";
+                downloadDb.setAttribute("class", "DownloadDbButton");
                 downloadDb.setAttribute("onClick", "DownloadDb();");
                 downloadDb.value = "Download Db File";
                 document.getElementById("root").appendChild(downloadDb);
@@ -216,6 +225,7 @@
 
     DownloadDb = () => {
         alert("Downloading Db File");
+        db.run("VACUUM;");
         let arraybuff = db.export();
         let blob = new Blob([arraybuff]);
         let a = document.createElement("a");
