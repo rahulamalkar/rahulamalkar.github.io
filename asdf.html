@@ -94,6 +94,14 @@
                 fileInput.setAttribute("onchange", `uploadBackTestData(${dbRow.id})`);
                 cell = tableRow.insertCell(-1);
                 cell.appendChild(fileInput);
+
+                let button = document.createElement("INPUT");
+                button.setAttribute("type", "button");
+                button.setAttribute("id", `processData-${dbRow.id}`);
+                button.setAttribute("onClick", `ProcessData(${dbRow.id})`);
+                button.setAttribute("value", `Process`);
+                cell = tableRow.insertCell(-1);
+                cell.appendChild(button);
             }
 
             let button = document.createElement("INPUT");
@@ -240,6 +248,72 @@
         a.click();
         a.parentElement.removeChild(a);
     };
+
+    ProcessData = async(id) => {
+        // let fileUpload = document.getElementById(`backTestData-${id}`);
+        // let parent = fileUpload.parentElement;
+        // let loading = document.createElement("P");
+        // loading.setAttribute("id", `processingDataLoading-${id}`);
+        // loading.innerText = "Processing...";
+        // parent.removeChild(fileUpload);
+        // parent.appendChild(loading);
+
+        let obj = {};
+        let backTestData = await execute(`select date, symbol from backTestData where link = ${id}`);
+
+        if (!obj.backTest) obj.backTest = {}
+        if (!obj.backTest.excludedSymbols) obj.backTest.excludedSymbols = [];
+        if (!obj.backTest.missingNextDayData) obj.backTest.missingNextDayData = 0;
+        if (!obj.backTest.nextDayPositiveCount) obj.backTest.nextDayPositiveCount = 0;
+        if (!obj.backTest.nextDayNegativeCount) obj.backTest.nextDayNegativeCount = 0;
+        if (!obj.backTest.nextDayEqualCount) obj.backTest.nextDayEqualCount = 0;
+
+        obj.backTest.data = backTestData;
+        obj.backTest.orgBackTestDataLength = backTestData.length;
+
+        for (let j = 0; j < obj.backTest.data.length; j++) {
+            let nseData = await execute(`select prevClose, open, close, quantity from nseData where symbol = '${obj.backTest.data[j].symbol}' and date = ${obj.backTest.data[j].date}`);
+
+            if (nseData.length !== 0) {
+                obj.backTest.data[j].prevClose = nseData[0].prevClose;
+                obj.backTest.data[j].open = nseData[0].open;
+                obj.backTest.data[j].close = nseData[0].close;
+                obj.backTest.data[j].quantity = nseData[0].quantity;
+
+                let nextDayData = await execute(`select date, prevClose, open, close, quantity from nseData where symbol = '${obj.backTest.data[j].symbol}' and date > ${obj.backTest.data[j].date} and date < ${obj.backTest.data[j].date + 5} order by date`);
+
+                if (nextDayData.length === 0) {
+                    obj.backTest.missingNextDayData++;
+                    continue;
+                }
+
+                // console.log(`data:${JSON.stringify(obj.backTest.data[j])}, nextDayData:${JSON.stringify(nextDayData)}`);
+                obj.backTest.data[j].nextDayData = nextDayData[0];
+
+                if (nextDayData[0].close > nextDayData[0].open) obj.backTest.nextDayPositiveCount++;
+                else if (nextDayData[0].close < nextDayData[0].open) obj.backTest.nextDayNegativeCount++;
+                else obj.backTest.nextDayEqualCount++;
+            } else {
+                obj.backTest.excludedSymbols.push(obj.backTest.data[j].symbol);
+                obj.backTest.data.splice(j, 1);
+            }
+        }
+        obj.backTest.excludedSymbols = [...new Set(obj.backTest.excludedSymbols)];
+
+        console.table(obj);
+    };
+
+    execute = async(query) => {
+        return new Promise((resolve, reject) => {
+            let rst = [];
+            let stmt = db.prepare(query);
+            while (stmt.step())
+                rst.push(stmt.getAsObject());
+
+            resolve(rst);
+            return;
+        });
+    }
 </script>
 
 <script>
