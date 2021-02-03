@@ -14,14 +14,12 @@
         width: 100%;
         height: 50px;
     }
-    
-    .DownloadDbButton {
+    /* .DownloadDbButton {
         position: fixed;
-        /* width: 25%; */
         bottom: 0px;
         right: 0px;
         border: 3px solid #8AC007;
-    }
+    } */
 </style>
 
 <body>
@@ -98,7 +96,7 @@
                 let button = document.createElement("INPUT");
                 button.setAttribute("type", "button");
                 button.setAttribute("id", `processData-${dbRow.id}`);
-                button.setAttribute("onClick", `ProcessData(${dbRow.id})`);
+                button.setAttribute("onClick", `ProcessData(${dbRow.id}, "${dbRow.link}")`);
                 button.setAttribute("value", `Process`);
                 cell = tableRow.insertCell(-1);
                 cell.appendChild(button);
@@ -126,7 +124,7 @@
             button.setAttribute("onclick", "addLink()");
             button.setAttribute("value", "AddLink");
             cell = tableRow.insertCell(-1);
-            cell.setAttribute("colspan", "2");
+            cell.setAttribute("colspan", "3");
             cell.appendChild(button);
         }
 
@@ -137,7 +135,7 @@
         button.setAttribute("onclick", `printLinks(${status ? '' : '"I"'})`);
         button.setAttribute("value", `Show ${status ? 'Active' : 'Disabled'} Links`);
         let cell = tableRow.insertCell(-1);
-        cell.setAttribute("colspan", "3");
+        cell.setAttribute("colspan", "4");
         cell.appendChild(button);
 
         document.getElementById("root").appendChild(table);
@@ -249,7 +247,7 @@
         a.parentElement.removeChild(a);
     };
 
-    ProcessData = async(id) => {
+    ProcessData = async(id, link) => {
         // let fileUpload = document.getElementById(`backTestData-${id}`);
         // let parent = fileUpload.parentElement;
         // let loading = document.createElement("P");
@@ -268,6 +266,8 @@
         if (!obj.backTest.nextDayNegativeCount) obj.backTest.nextDayNegativeCount = 0;
         if (!obj.backTest.nextDayEqualCount) obj.backTest.nextDayEqualCount = 0;
 
+        obj.backTest.linkId = id;
+        obj.backTest.link = link;
         obj.backTest.data = backTestData;
         obj.backTest.orgBackTestDataLength = backTestData.length;
 
@@ -300,7 +300,35 @@
         }
         obj.backTest.excludedSymbols = [...new Set(obj.backTest.excludedSymbols)];
 
+        console.log(obj);
         console.table(obj);
+
+        var table = document.createElement("table");
+        table.setAttribute("id", `processReport-${id}`)
+        table.border = "1";
+
+        //Add the header row.
+        let row = table.insertRow(-1);
+        Object.keys(obj.backTest).sort().forEach(element => {
+            let headerCell = document.createElement("TH");
+            headerCell.innerHTML = element;
+            row.appendChild(headerCell);
+        });
+
+        row = table.insertRow(-1);
+        Object.keys(obj.backTest).sort().forEach(element => {
+            let cell = row.insertCell(-1);
+            if (obj.backTest[element] instanceof Array)
+                cell.innerHTML = obj.backTest[element].length;
+            else
+                cell.innerHTML = obj.backTest[element];
+        });
+
+        let tableExists = document.getElementById(`processReport-${id}`);
+        if (tableExists) {
+            tableExists.parentElement.removeChild(tableExists);
+        }
+        document.getElementById("root").appendChild(table);
     };
 
     execute = async(query) => {
