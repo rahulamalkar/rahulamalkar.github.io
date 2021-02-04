@@ -77,6 +77,7 @@
             let dbRow = stmt.getAsObject();
 
             let tableRow = table.insertRow(-1);
+            tableRow.setAttribute("id", `linkTableId-${dbRow.id}`);
 
             let a = document.createElement("a");
             a.href = dbRow.link;
@@ -96,7 +97,7 @@
                 let button = document.createElement("INPUT");
                 button.setAttribute("type", "button");
                 button.setAttribute("id", `processData-${dbRow.id}`);
-                button.setAttribute("onClick", `ProcessData(${dbRow.id}, "${dbRow.link}")`);
+                button.setAttribute("onClick", `ProcessData(this, ${dbRow.id}, "${dbRow.link}")`);
                 button.setAttribute("value", `Process`);
                 cell = tableRow.insertCell(-1);
                 cell.appendChild(button);
@@ -201,18 +202,18 @@
 
     ProcessExcel = (id, data) => {
         //Read the Excel File data.
-        var workbook = XLSX.read(data, {
+        let workbook = XLSX.read(data, {
             type: 'binary'
         });
 
         //Fetch the name of First Sheet.
-        var firstSheet = workbook.SheetNames[0];
+        let firstSheet = workbook.SheetNames[0];
 
         //Read all rows from First Sheet into an JSON array.
-        var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[firstSheet]);
+        let excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[firstSheet]);
 
         //Add the data rows from Excel file.
-        for (var i = 0; i < excelRows.length; i++) {
+        for (let i = 0; i < excelRows.length; i++) {
             let dateParts = (excelRows[i].date.indexOf("/") !== -1) ? excelRows[i].date.split("/") : excelRows[i].date.split("-");
             db.run(`insert or ignore into backTestData (link, date, symbol) values (?,?,?)`, [id, Number(((dateParts[2].length === 2) ? "20" + dateParts[2] : dateParts[2]) + twoDigit(Number(dateParts[1])) + twoDigit(Number(dateParts[0]))), excelRows[i].symbol]);
         }
@@ -247,7 +248,18 @@
         a.parentElement.removeChild(a);
     };
 
-    ProcessData = async(id, link) => {
+    ProcessData = async(ele, id, link) => {
+        //get current row
+        // let currRow = document.getElementById(`linkTableId-${id}`);
+
+        // alert(`clicked row index is:${ele.parentElement.parentElement.rowIndex}`);
+
+        // let table1 = document.getElementById("myTable");
+        // let row1 = table1.insertRow(ele.parentElement.parentElement.rowIndex + 1);
+        // let cell1 = row1.insertCell(0);
+        // cell1.setAttribute("colspan", "4");
+        // cell1.innerHTML = "NEW CELL1";
+
         // let fileUpload = document.getElementById(`backTestData-${id}`);
         // let parent = fileUpload.parentElement;
         // let loading = document.createElement("P");
@@ -266,8 +278,6 @@
         if (!obj.backTest.nextDayNegativeCount) obj.backTest.nextDayNegativeCount = 0;
         if (!obj.backTest.nextDayEqualCount) obj.backTest.nextDayEqualCount = 0;
 
-        obj.backTest.linkId = id;
-        obj.backTest.link = link;
         obj.backTest.data = backTestData;
         obj.backTest.orgBackTestDataLength = backTestData.length;
 
@@ -303,7 +313,7 @@
         console.log(obj);
         console.table(obj);
 
-        var table = document.createElement("table");
+        let table = document.createElement("table");
         table.setAttribute("id", `processReport-${id}`)
         table.border = "1";
 
@@ -324,11 +334,24 @@
                 cell.innerHTML = obj.backTest[element];
         });
 
+        // alert(`clicked row index is:${ele.parentElement.parentElement.rowIndex}`);
+
+        let table1 = document.getElementById("myTable");
+        let row1 = table1.insertRow(ele.parentElement.parentElement.rowIndex + 1);
+
         let tableExists = document.getElementById(`processReport-${id}`);
         if (tableExists) {
             tableExists.parentElement.removeChild(tableExists);
         }
-        document.getElementById("root").appendChild(table);
+
+        row1.setAttribute("id", `processReport-${id}`)
+        let cell1 = row1.insertCell(-1);
+        cell1.setAttribute("colspan", "4");
+        cell1.innerHTML = table.outerHTML;
+        // cell1.innerHTML = "NEW CELL1";
+        // cell1.appendChild(table);
+
+
     };
 
     execute = async(query) => {
