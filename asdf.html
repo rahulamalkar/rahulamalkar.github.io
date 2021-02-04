@@ -7,6 +7,7 @@
     td {
         border: 1px solid black;
         inline-size: -webkit-fill-available;
+        /* margin-left: 10px; */
     }
     
     input[type="text"],
@@ -249,24 +250,11 @@
     };
 
     ProcessData = async(ele, id, link) => {
-        //get current row
-        // let currRow = document.getElementById(`linkTableId-${id}`);
-
-        // alert(`clicked row index is:${ele.parentElement.parentElement.rowIndex}`);
-
-        // let table1 = document.getElementById("myTable");
-        // let row1 = table1.insertRow(ele.parentElement.parentElement.rowIndex + 1);
-        // let cell1 = row1.insertCell(0);
-        // cell1.setAttribute("colspan", "4");
-        // cell1.innerHTML = "NEW CELL1";
-
-        // let fileUpload = document.getElementById(`backTestData-${id}`);
-        // let parent = fileUpload.parentElement;
-        // let loading = document.createElement("P");
-        // loading.setAttribute("id", `processingDataLoading-${id}`);
-        // loading.innerText = "Processing...";
-        // parent.removeChild(fileUpload);
-        // parent.appendChild(loading);
+        let tableExists = document.getElementById(`processReport-${id}`);
+        if (tableExists) {
+            tableExists.parentElement.removeChild(tableExists);
+            return;
+        }
 
         let obj = {};
         let backTestData = await execute(`select date, symbol from backTestData where link = ${id}`);
@@ -313,45 +301,93 @@
         console.log(obj);
         console.table(obj);
 
+        let data = {};
+
+        data.total = obj.backTest.orgBackTestDataLength;
+        data.mis = (obj.backTest.missingNextDayData / obj.backTest.orgBackTestDataLength) * 100;
+        data.neg = (obj.backTest.nextDayNegativeCount / obj.backTest.orgBackTestDataLength) * 100;
+        data.eq = (obj.backTest.nextDayEqualCount / obj.backTest.orgBackTestDataLength) * 100;
+        data.pos = (obj.backTest.nextDayPositiveCount / obj.backTest.orgBackTestDataLength) * 100;
+
         let table = document.createElement("table");
         table.setAttribute("id", `processReport-${id}`)
         table.border = "1";
 
         //Add the header row.
         let row = table.insertRow(-1);
-        Object.keys(obj.backTest).sort().forEach(element => {
+        Object.keys(data).sort().forEach(element => {
             let headerCell = document.createElement("TH");
             headerCell.innerHTML = element;
             row.appendChild(headerCell);
         });
+        let headerCell = document.createElement("TH");
+        headerCell.innerHTML = "Analyse";
+        row.appendChild(headerCell);
 
         row = table.insertRow(-1);
-        Object.keys(obj.backTest).sort().forEach(element => {
+        Object.keys(data).sort().forEach(element => {
             let cell = row.insertCell(-1);
-            if (obj.backTest[element] instanceof Array)
-                cell.innerHTML = obj.backTest[element].length;
+            if (data[element] instanceof Array)
+                cell.innerHTML = data[element].length;
             else
-                cell.innerHTML = obj.backTest[element];
+                cell.innerHTML = data[element];
         });
 
-        // alert(`clicked row index is:${ele.parentElement.parentElement.rowIndex}`);
+        let analyseDataButton = document.createElement("INPUT");
+        analyseDataButton.setAttribute("type", "button");
+        analyseDataButton.setAttribute("onClick", `toogleDisplay("analysisData-${id}")`);
+        analyseDataButton.value = "Analyse";
+        let cell = row.insertCell(-1);
+        cell.appendChild(analyseDataButton);
 
-        let table1 = document.getElementById("myTable");
-        let row1 = table1.insertRow(ele.parentElement.parentElement.rowIndex + 1);
+        row = table.insertRow(-1);
+        row.setAttribute("id", `analysisData-${id}`)
+        row.style.display = "none";
+        cell = row.insertCell(-1);
+        cell.setAttribute("colspan", "10");
 
-        let tableExists = document.getElementById(`processReport-${id}`);
-        if (tableExists) {
-            tableExists.parentElement.removeChild(tableExists);
+        {
+            let col = [];
+            // for (var i = 0; i < myBooks.length; i++) {
+            for (let key in obj.backTest.data[0]) {
+                if (col.indexOf(key) === -1) {
+                    col.push(key);
+                }
+            }
+            // }
+
+            // Create a table.
+            let table = document.createElement("table");
+
+            // Create table header row using the extracted headers above.
+            let tr = table.insertRow(-1); // table row.
+
+            for (let i = 0; i < col.length; i++) {
+                let th = document.createElement("th"); // table header.
+                th.innerHTML = col[i];
+                tr.appendChild(th);
+            }
+
+            // add json data to the table as rows.
+            for (let i = 0; i < obj.backTest.data.length; i++) {
+
+                tr = table.insertRow(-1);
+
+                for (let j = 0; j < col.length; j++) {
+                    let tabCell = tr.insertCell(-1);
+                    tabCell.innerHTML = obj.backTest.data[i][col[j]];
+                }
+            }
+
+            cell.innerHTML = table.outerHTML;
         }
 
+        let linksTable = document.getElementById("myTable");
+        let row1 = linksTable.insertRow(ele.parentElement.parentElement.rowIndex + 1);
         row1.setAttribute("id", `processReport-${id}`)
         let cell1 = row1.insertCell(-1);
         cell1.setAttribute("colspan", "4");
         cell1.innerHTML = table.outerHTML;
-        // cell1.innerHTML = "NEW CELL1";
-        // cell1.appendChild(table);
-
-
     };
 
     execute = async(query) => {
@@ -365,6 +401,15 @@
             return;
         });
     }
+
+    toogleDisplay = (id) => {
+        var x = document.getElementById(id);
+        if (x.style.display === "none") {
+            x.style.display = "contents";
+        } else {
+            x.style.display = "none";
+        }
+    };
 </script>
 
 <script>
