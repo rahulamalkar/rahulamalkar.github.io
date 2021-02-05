@@ -278,7 +278,7 @@
                 obj.backTest.data[j].close = nseData[0].close;
                 obj.backTest.data[j].quantity = nseData[0].quantity;
 
-                let nextDayData = await execute(`select date, prevClose, open, close, quantity from nseData where symbol = '${obj.backTest.data[j].symbol}' and date > ${obj.backTest.data[j].date} and date < ${obj.backTest.data[j].date + 5} order by date`);
+                let nextDayData = await execute(`select date, open, close, quantity from nseData where symbol = '${obj.backTest.data[j].symbol}' and date > ${obj.backTest.data[j].date} and date < ${obj.backTest.data[j].date + 5} order by date`);
 
                 if (nextDayData.length === 0) {
                     obj.backTest.missingNextDayData++;
@@ -346,41 +346,7 @@
         cell = row.insertCell(-1);
         cell.setAttribute("colspan", "10");
 
-        {
-            let col = [];
-            // for (var i = 0; i < myBooks.length; i++) {
-            for (let key in obj.backTest.data[0]) {
-                if (col.indexOf(key) === -1) {
-                    col.push(key);
-                }
-            }
-            // }
-
-            // Create a table.
-            let table = document.createElement("table");
-
-            // Create table header row using the extracted headers above.
-            let tr = table.insertRow(-1); // table row.
-
-            for (let i = 0; i < col.length; i++) {
-                let th = document.createElement("th"); // table header.
-                th.innerHTML = col[i];
-                tr.appendChild(th);
-            }
-
-            // add json data to the table as rows.
-            for (let i = 0; i < obj.backTest.data.length; i++) {
-
-                tr = table.insertRow(-1);
-
-                for (let j = 0; j < col.length; j++) {
-                    let tabCell = tr.insertCell(-1);
-                    tabCell.innerHTML = obj.backTest.data[i][col[j]];
-                }
-            }
-
-            cell.innerHTML = table.outerHTML;
-        }
+        cell.innerHTML = getTableForJSON(obj.backTest.data);
 
         let linksTable = document.getElementById("myTable");
         let row1 = linksTable.insertRow(ele.parentElement.parentElement.rowIndex + 1);
@@ -409,6 +375,60 @@
         } else {
             x.style.display = "none";
         }
+    };
+
+    getTableForJSON = (jsonData) => {
+        if (!jsonData)
+            return undefined;
+
+        let col = [];
+        // for (var i = 0; i < myBooks.length; i++) {
+        let firstObj = (jsonData instanceof Array) ? jsonData[0] : jsonData;
+
+        for (let key in firstObj) {
+            if (col.indexOf(key) === -1) {
+                col.push(key);
+            }
+        }
+        // }
+
+        // Create a table.
+        let table = document.createElement("table");
+
+        // Create table header row using the extracted headers above.
+        let tr = table.insertRow(-1); // table row.
+
+        for (let i = 0; i < col.length; i++) {
+            let th = document.createElement("th"); // table header.
+            th.innerHTML = col[i];
+            tr.appendChild(th);
+        }
+
+        if (jsonData instanceof Array) {
+            // add json data to the table as rows.
+            for (let i = 0; i < jsonData.length; i++) {
+
+                tr = table.insertRow(-1);
+
+                for (let j = 0; j < col.length; j++) {
+                    let tabCell = tr.insertCell(-1);
+                    if (jsonData[i][col[j]] instanceof Object) {
+                        tabCell.innerHTML = getTableForJSON(jsonData[i][col[j]]);
+                    } else
+                        tabCell.innerHTML = jsonData[i][col[j]];
+                }
+            }
+        } else {
+            tr = table.insertRow(-1);
+            for (let j = 0; j < col.length; j++) {
+                let tabCell = tr.insertCell(-1);
+                if (jsonData[col[j]] instanceof Object) {
+                    tabCell.innerHTML = getTableForJSON(jsonData[i][col[j]]);
+                } else
+                    tabCell.innerHTML = jsonData[col[j]];
+            }
+        }
+        return table.outerHTML;
     };
 </script>
 
