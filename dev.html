@@ -11,9 +11,13 @@
     }
     
     input[type="text"],
-    input[type="button"] {
+    input[type="button"],
+    input[type="file"] {
         width: 100%;
         height: 50px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        border: 1px solid black;
     }
     /* .DownloadDbButton {
         position: fixed;
@@ -34,6 +38,9 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/jszip.js"></script>
 
 <script>
+    const rootEle = "root";
+    const linksTableDiv = "LinksDiv";
+
     let db = undefined;
     let config = {
         locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.4.0/dist/${filename}`
@@ -55,7 +62,7 @@
                 downloadDb.setAttribute("class", "DownloadDbButton");
                 downloadDb.setAttribute("onClick", "DownloadDb();");
                 downloadDb.value = "Download Db File";
-                document.getElementById("root").appendChild(downloadDb);
+                document.getElementById(rootEle).appendChild(downloadDb);
 
                 printLinks();
 
@@ -73,6 +80,24 @@
         let stmt = db.prepare(`select id, link from masterLinks where status = '${status ? status : 'A'}'`);
         let table = document.createElement("TABLE");
         table.id = "myTable";
+
+        let row = table.insertRow(-1);
+        let headerCell = document.createElement("TH");
+        headerCell.innerHTML = "Link";
+        row.appendChild(headerCell);
+
+        if (!status) {
+            headerCell = document.createElement("TH");
+            headerCell.innerHTML = "Upload BackTest Data";
+            row.appendChild(headerCell);
+
+            headerCell = document.createElement("TH");
+            headerCell.innerHTML = "Process";
+            row.appendChild(headerCell);
+        }
+        headerCell = document.createElement("TH");
+        headerCell.innerHTML = "Change Status";
+        row.appendChild(headerCell);
 
         while (stmt.step()) {
             let dbRow = stmt.getAsObject();
@@ -140,7 +165,10 @@
         cell.setAttribute("colspan", "4");
         cell.appendChild(button);
 
-        document.getElementById("root").appendChild(table);
+        let linksDiv = document.createElement("DIV");
+        linksDiv.setAttribute("id", linksTableDiv);
+        linksDiv.appendChild(table);
+        document.getElementById(rootEle).appendChild(linksDiv);
     };
 
     changeLinkStatus = (id, status) => {
@@ -440,7 +468,7 @@
     fileInput.setAttribute("type", "file");
     fileInput.setAttribute("id", "dbFile");
     fileInput.setAttribute("onchange", "fileUpload()");
-    document.getElementById("root").appendChild(fileInput);
+    document.getElementById(rootEle).appendChild(fileInput);
 
     window.onbeforeunload = function() {
         return "Data will be lost if you leave the page, are you sure?asdfdsasdfdsasd";
